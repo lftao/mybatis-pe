@@ -2,10 +2,10 @@
 Mybatis proxy expand
 
 	<dependency>
-			<groupId>com.github.lftao</groupId>
-			<artifactId>mybatis-pe</artifactId>
-			<version>0.0.1</version>
-		</dependency>
+		<groupId>com.github.lftao</groupId>
+		<artifactId>mybatis-pe</artifactId>
+		<version>0.0.1</version>
+	</dependency>
      
 	<bean id="sqlSessionFactory" class="com.lftao.mybatis.support.SqlSessionFactoryBean">
 		<property name="dataSource" ref="dataSource" />
@@ -18,7 +18,7 @@ Mybatis proxy expand
 		<property name="mapperFactoryBeanClass" value="com.lftao.mybatis.support.MapperBeanPrpxy" />
 	</bean>
   
-Mapping.xml
+# Mapping.xml
 <?xml version="1.0" encoding="UTF-8"?>
 <mapping>
 	<default>
@@ -32,7 +32,7 @@ Mapping.xml
 	</class>
 </mapping>
 
-public interface DemoDao extends DaoInterface<Demo>
+# interface
+public interface DemoDao extends DaoInterface<Demo>{
 
-  
-  
+}
