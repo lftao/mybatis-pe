@@ -79,7 +79,7 @@ public class TableMapping implements Serializable {
     /**
      * 获取-Column
      * 
-     * @param propertie
+     * @param propertie propertie
      * @return Column
      */
     public String getColumnByPropertie(String propertie) {
@@ -93,8 +93,8 @@ public class TableMapping implements Serializable {
     /**
      * 获取-Column to propertie
      * 
-     * @param Column
-     * @return propertie
+     * @param column column
+     * @return Propertie
      */
     public String getPropertieByColumn(String column) {
         String propertie = columns.get(column);
@@ -118,7 +118,7 @@ public class TableMapping implements Serializable {
      * 
      * @param propertie
      *            字段
-     * @return
+     * @return 字段
      */
     public Field getField(String propertie) {
         List<Field> list = getAllFields();
@@ -145,7 +145,7 @@ public class TableMapping implements Serializable {
      * 
      * @param key
      *            包路径
-     * @param TableMapping
+     * @param tableMapping
      *            tableMapping
      */
     public static void addMapping(Class<?> key, TableMapping tableMapping) {

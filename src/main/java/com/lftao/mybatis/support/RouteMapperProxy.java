@@ -50,7 +50,7 @@ public class RouteMapperProxy<T> extends DaoImpl<T> implements InvocationHandler
     /**
      * 构造方法路由
      * 
-     * @param obj
+     * @param obj 代理对象
      */
     @SuppressWarnings("unchecked")
     public RouteMapperProxy(Object obj) {

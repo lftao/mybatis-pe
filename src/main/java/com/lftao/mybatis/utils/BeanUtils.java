@@ -25,7 +25,7 @@ public class BeanUtils {
      * 
      * @param clazz
      *            class
-     * @return
+     * @return 所有字段
      */
     public static List<Field> getAllFieldsCache(Class<?> clazz) {
         List<Field> allFields = fieldCache.get(clazz);

@@ -18,7 +18,7 @@ public enum SqlCommand {
      */
     SQL_FIND_PAGE_BY_ENTITY("findPageByEntity", "<script>select <trim suffixOverrides=','>%s</trim> from %s <where>%s</where></script>"),
     /**
-     * >delete from %s where %s=%s
+     * delete from %s where %s=%s
      */
     SQL_DELETE_BY_ID("delteById", "<script>delete from %s where %s=#{%s}</script>"),
     /**
