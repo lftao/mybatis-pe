@@ -8,6 +8,8 @@ import java.util.Map;
 
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
+import com.lftao.mybatis.exception.MybatisException;
+
 /**
  * TableMapping
  * 
@@ -79,7 +81,8 @@ public class TableMapping implements Serializable {
     /**
      * 获取-Column
      * 
-     * @param propertie propertie
+     * @param propertie
+     *            propertie
      * @return Column
      */
     public String getColumnByPropertie(String propertie) {
@@ -93,7 +96,8 @@ public class TableMapping implements Serializable {
     /**
      * 获取-Column to propertie
      * 
-     * @param column column
+     * @param column
+     *            column
      * @return Propertie
      */
     public String getPropertieByColumn(String column) {
@@ -126,6 +130,24 @@ public class TableMapping implements Serializable {
     }
 
     /**
+     * 获取指定Field值
+     * 
+     * @param propertie
+     *            字段
+     * @param entity
+     *            对象
+     * @return 值
+     */
+    public Object getFieldValue(String propertie, Object entity) {
+        Field field = getField(propertie);
+        try {
+            return field.get(entity);
+        } catch (Exception e) {
+            throw new MybatisException("FieldValue is not error", e);
+        }
+    }
+
+    /**
      * 获取tableMapping
      * 
      * @param key
@@ -135,7 +157,7 @@ public class TableMapping implements Serializable {
     public static TableMapping getMapping(Class<?> key) {
         TableMapping tableMapping = mapping.get(key);
         if (tableMapping == null) {
-            throw new RuntimeException(key.getName() + " tableMapping is not found");
+            throw new MybatisException(key.getName() + " tableMapping is not found");
         }
         return tableMapping;
     }

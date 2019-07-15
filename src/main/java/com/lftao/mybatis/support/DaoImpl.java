@@ -5,9 +5,11 @@ import java.util.List;
 
 import org.mybatis.spring.SqlSessionTemplate;
 
+import com.lftao.mybatis.exception.MybatisException;
 import com.lftao.mybatis.pagination.Page;
 import com.lftao.mybatis.utils.ScriptSqlUtils;
 import com.lftao.mybatis.utils.SqlCommand;
+import com.lftao.mybatis.utils.TableMapping;
 
 /**
  * 常用基础方法接口
@@ -53,12 +55,22 @@ public class DaoImpl<T> implements DaoInterface<T> {
 
     @Override
     public int updateById(T entity) {
+        TableMapping mapping = TableMapping.getMapping(classType);
+        Object id = mapping.getFieldValue(mapping.getKeyId(), entity);
+        if (id == null) {
+            throw new MybatisException(mapping.getClassz() + " Key value is missing");
+        }
         String statementId = ScriptSqlUtils.getStatementId(SqlCommand.SQL_UPDATE_BY_ID, classType);
         return sqlSessionTemplate.update(statementId, entity);
     }
 
     @Override
     public int updateNotNullById(T entity) {
+        TableMapping mapping = TableMapping.getMapping(classType);
+        Object id = mapping.getFieldValue(mapping.getKeyId(), entity);
+        if (id == null) {
+            throw new MybatisException(mapping.getClassz() + " Key value is missing");
+        }
         String statementId = ScriptSqlUtils.getStatementId(SqlCommand.SQL_UPDATE_NOT_NULL_BY_ID, classType);
         return sqlSessionTemplate.update(statementId, entity);
     }
@@ -69,7 +81,7 @@ public class DaoImpl<T> implements DaoInterface<T> {
     }
 
     @Override
-    public List<T>  findByEntity(T query) {
+    public List<T> findByEntity(T query) {
         String statementId = ScriptSqlUtils.getStatementId(SqlCommand.SQL_FIND_BY_ENTITY, classType);
         return sqlSessionTemplate.selectList(statementId, query);
     }
