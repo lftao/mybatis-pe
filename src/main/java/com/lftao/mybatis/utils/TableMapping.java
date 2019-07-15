@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
@@ -22,8 +23,12 @@ public class TableMapping implements Serializable {
     private String keyId;
     private String tableName;
     private String keyColumn;
+    // DB-columns
     private LinkedCaseInsensitiveMap<String> columns;
+    // entity-properties
     private LinkedCaseInsensitiveMap<String> properties;
+    // 瞬时字段
+    private Set<String> transientProperties;
 
     public Class<?> getClassz() {
         return this.classz;
@@ -76,6 +81,14 @@ public class TableMapping implements Serializable {
     public TableMapping setProperties(LinkedCaseInsensitiveMap<String> properties) {
         this.properties = properties;
         return this;
+    }
+    
+    public Set<String> getTransientProperties() {
+        return this.transientProperties;
+    }
+
+    public void setTransientProperties(Set<String> transientProperties) {
+        this.transientProperties = transientProperties;
     }
 
     /**

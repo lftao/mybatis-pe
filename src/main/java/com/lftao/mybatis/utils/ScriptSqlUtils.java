@@ -2,6 +2,7 @@ package com.lftao.mybatis.utils;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Set;
 
 public class ScriptSqlUtils {
     public static String getStatementId(SqlCommand command, Class<?> classz) {
@@ -10,12 +11,16 @@ public class ScriptSqlUtils {
 
     public static String getScriptSql(SqlCommand command, Class<?> classz) {
         TableMapping mapping = TableMapping.getMapping(classz);
+        Set<String> transientProperties = mapping.getTransientProperties();
         List<Field> fields = mapping.getAllFields();
         StringBuilder columns = new StringBuilder();
         StringBuilder params = new StringBuilder();
         fields.stream().forEach((field) -> {
             String name = field.getName();
             String column = mapping.getColumnByPropertie(name);
+            if (column == null || transientProperties.contains(name)) {
+                return;
+            }
             // 插入语句
             if (SqlCommand.INSERT.equals(command)) {
                 // 所有column字段

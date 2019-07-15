@@ -3,7 +3,9 @@ package com.lftao.mybatis.support;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.ibatis.exceptions.ExceptionFactory;
 import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
@@ -30,10 +32,11 @@ import com.lftao.mybatis.utils.TableMapping;
 
 public class SqlSessionFactoryBean extends org.mybatis.spring.SqlSessionFactoryBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlSessionFactoryBean.class);
+    private static final String NODE_PATH_PROPERTY = "property";
+    private static final String NODE_PATH_TRANSIENT = "transient";
     private static final String NODE_TABLE_NAME = "table";
     private static final String NODE_TABLE_ID = "id";
     private static final String NODE_COLUMN = "column";
-    private static final String NODE_PROPERTY = "property";
     private static final String NODE_NAME = "name";
     // 资源配置
     private Resource[] tableMapping;
@@ -78,11 +81,21 @@ public class SqlSessionFactoryBean extends org.mybatis.spring.SqlSessionFactoryB
                     // 主键
                     XNode nodeId = xNode.evalNode(NODE_TABLE_ID);
                     if (nodeId != null) {
-                        tableMapping.setKeyId(nodeId.getStringAttribute(NODE_PROPERTY));
+                        tableMapping.setKeyId(nodeId.getStringAttribute(NODE_PATH_PROPERTY));
                         tableMapping.setKeyColumn(nodeId.getStringAttribute(NODE_COLUMN));
                     }
+                    // 瞬时字段
+                    Set<String> transients = new HashSet<>();
+                    List<XNode> propsTransient = xNode.evalNodes(NODE_PATH_TRANSIENT);
+                    for (XNode xNodeTras : propsTransient) {
+                        String property = xNodeTras.getStringAttribute(NODE_NAME);
+                        if (property == null) {
+                            continue;
+                        }
+                        transients.add(property);
+                    }
                     // 字段
-                    List<XNode> columnNodes = xNode.evalNodes(NODE_PROPERTY);
+                    List<XNode> columnNodes = xNode.evalNodes(NODE_PATH_PROPERTY);
                     LinkedCaseInsensitiveMap<String> columns = new LinkedCaseInsensitiveMap<>(columnNodes.size());
                     LinkedCaseInsensitiveMap<String> properties = new LinkedCaseInsensitiveMap<>(columnNodes.size());
                     for (XNode node : columnNodes) {
@@ -90,6 +103,11 @@ public class SqlSessionFactoryBean extends org.mybatis.spring.SqlSessionFactoryB
                             String property = node.getStringAttribute(NODE_NAME);
                             String column = node.getStringAttribute(NODE_COLUMN);
                             if (column == null || property == null) {
+                                LOGGER.debug("column:{},property:{}", property, column);
+                                continue;
+                            }
+                            if (propsTransient.contains(property)) {
+                                LOGGER.debug("property:{} is transient");
                                 continue;
                             }
                             columns.put(column, property);
@@ -98,6 +116,7 @@ public class SqlSessionFactoryBean extends org.mybatis.spring.SqlSessionFactoryB
                     }
                     tableMapping.setColumns(columns);
                     tableMapping.setProperties(properties);
+                    tableMapping.setTransientProperties(transients);
                     // 记录类映射
                     tableMapping.setClassz(Class.forName(type));
                     TableMapping.addMapping(tableMapping.getClassz(), tableMapping);
