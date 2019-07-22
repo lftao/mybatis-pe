@@ -222,7 +222,7 @@ public class SqlSessionFactoryBean extends org.mybatis.spring.SqlSessionFactoryB
         Field fieldId = tableMapping.getField(tableMapping.getKeyId());
         List<ResultMap> resultMaps = new ArrayList<>(1);
         // 全局resultMap
-        String resultMapEntityName = classz.getName() + ".resultMap";
+        String resultMapEntityName = classz.getName();
         // 判断系统是否已存在
         Collection<String> hasResultMapNames = configuration.getResultMapNames();
         if (hasResultMapNames.contains(resultMapEntityName)) {
