@@ -4,6 +4,11 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 脚本SQL工具类
+ * @author tao
+ *
+ */
 public class ScriptSqlUtils {
     public static String getStatementId(SqlCommand command, Class<?> classz) {
         return classz.getName() + "." + command.getCommand();
