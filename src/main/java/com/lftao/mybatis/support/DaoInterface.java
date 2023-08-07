@@ -66,6 +66,17 @@ public interface DaoInterface<T> {
     int updateNotNullById(T entity);
 
     /**
+     * 更新非空字段
+     * 
+     * @param entity
+     *            更新实体
+     * @param whereEntity
+     *            条件实体
+     * @return 变更值
+     */
+    int updateNotNullByEntity(T entity,T whereEntity);
+    
+    /**
      * 执行分页查询
      * 
      * @param qyery

@@ -1,6 +1,7 @@
 package com.lftao.mybatis.support;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 
 import org.mybatis.spring.SqlSessionTemplate;
@@ -85,4 +86,13 @@ public class DaoImpl<T> implements DaoInterface<T> {
         String statementId = ScriptSqlUtils.getStatementId(SqlCommand.SQL_FIND_BY_ENTITY, classType);
         return sqlSessionTemplate.selectList(statementId, query);
     }
+
+	@Override
+	public int updateNotNullByEntity(T entity, T whereEntity) {
+        String statementId = ScriptSqlUtils.getStatementId(SqlCommand.SQL_UPDATE_NOT_NULL_BY_ENTITY, classType);
+        HashMap<String, Object> params = new HashMap<>(2);
+        params.put("p1", entity);
+        params.put("p2", whereEntity);
+        return sqlSessionTemplate.update(statementId, params);
+	}
 }

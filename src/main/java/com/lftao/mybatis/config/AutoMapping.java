@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -248,9 +249,13 @@ public class AutoMapping implements ImportBeanDefinitionRegistrar {
 			else if (SqlCommand.SQL_UPDATE_BY_ID.equals(command)) {
 				addMappedStatement(buildUpdateById(command, tableMapping));
 			}
-			// 根据更新非空字段
+			// 根据ID更新非空字段
 			else if (SqlCommand.SQL_UPDATE_NOT_NULL_BY_ID.equals(command)) {
 				addMappedStatement(buildUpdateById(command, tableMapping));
+			}
+			// 根据实体更新非空字段
+			else if (SqlCommand.SQL_UPDATE_NOT_NULL_BY_ENTITY.equals(command)) {
+				addMappedStatement(buildUpdateByEntity(command, tableMapping));
 			}
 			// 分页查询
 			else if (SqlCommand.SQL_FIND_PAGE_BY_ENTITY.equals(command)) {
@@ -387,6 +392,21 @@ public class AutoMapping implements ImportBeanDefinitionRegistrar {
 		SqlSource sqlSource = getSqlSource(command, tableMapping);
 		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.UPDATE)
 				.parameterMap(new ParameterMap.Builder(configuration, classz.getName(), tableMapping.getClassz(), new ArrayList<>()).build()).build();
+	}
+	
+	/**
+	 * 构建 更新字段脚本
+	 * 
+	 * @param command      -SqlCommand
+	 * @param tableMapping 对象信息
+	 * @return MappedStatement
+	 */
+	private MappedStatement buildUpdateByEntity(SqlCommand command, TableMapping tableMapping) {
+		Class<?> classz = tableMapping.getClassz();
+		String statementId = ScriptSqlUtils.getStatementId(command, classz);
+		SqlSource sqlSource = getSqlSource(command, tableMapping);
+		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.UPDATE)
+				.parameterMap(new ParameterMap.Builder(configuration, classz.getName(), HashMap.class, new ArrayList<>()).build()).build();
 	}
 
 }

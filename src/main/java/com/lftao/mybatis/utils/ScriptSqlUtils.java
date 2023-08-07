@@ -59,6 +59,12 @@ public class ScriptSqlUtils {
                 // 所有column字段
                 columns.append(String.format(SqlCommand.IF, name, column + "=#{" + name + "},"));
             }
+            // 更新非空字段
+            else if (SqlCommand.SQL_UPDATE_NOT_NULL_BY_ENTITY.equals(command)) {
+            	// 所有column字段
+            	columns.append(String.format(SqlCommand.IF, "p1."+name, column + "=#{p1." + name + "},"));
+            	params.append(String.format(SqlCommand.IF, "p2."+name, " and " + column + "=#{p2." + name + "}"));
+            }
         });
         // --
         String tableName = mapping.getTableName();
@@ -96,6 +102,10 @@ public class ScriptSqlUtils {
             String keyColumn = mapping.getKeyColumn();
             String keyId = mapping.getKeyId();
             return String.format(command.getScript(), tableName, columns.toString(), keyColumn, keyId);
+        }
+        // 更新非空
+        else if (SqlCommand.SQL_UPDATE_NOT_NULL_BY_ENTITY.equals(command)) {
+        	return String.format(command.getScript(), tableName, columns.toString(),params);
         }
         return null;
     }

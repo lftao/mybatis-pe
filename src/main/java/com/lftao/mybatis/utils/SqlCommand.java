@@ -28,7 +28,11 @@ public enum SqlCommand {
     /**
      * update %s set %s where %s
      */
-    SQL_UPDATE_NOT_NULL_BY_ID("updateNotNullById", "<script>update %s set <trim suffixOverrides=','>%s</trim> where %s=#{%s}</script>");
+    SQL_UPDATE_NOT_NULL_BY_ID("updateNotNullById", "<script>update %s set <trim suffixOverrides=','>%s</trim> where %s=#{%s}</script>"),
+    /**
+     * update %s set %s where %s
+     */
+    SQL_UPDATE_NOT_NULL_BY_ENTITY("updateNotNullByEntity", "<script>update %s set <trim suffixOverrides=','>%s</trim> <where>%s</where></script>");
     /**
      * if test='%s' %s if
      */
