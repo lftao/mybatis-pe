@@ -73,4 +73,7 @@ public interface DaoInterface<T> {
      * @return 分页数据
      */
     Page<T> findPage(T qyery);
+    
+    Class<T> getClassType();
+    
 }

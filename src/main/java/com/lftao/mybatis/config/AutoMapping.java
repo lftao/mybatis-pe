@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -23,14 +22,9 @@ import org.apache.ibatis.parsing.XNode;
 import org.apache.ibatis.parsing.XPathParser;
 import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.session.Configuration;
-import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.type.TypeAliasRegistry;
 import org.mybatis.spring.mapper.MapperScannerConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
@@ -49,7 +43,7 @@ import com.lftao.mybatis.utils.ScriptSqlUtils;
 import com.lftao.mybatis.utils.SqlCommand;
 import com.lftao.mybatis.utils.TableMapping;
 
-public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegistrar {
+public class AutoMapping implements ImportBeanDefinitionRegistrar {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AutoMapping.class);
 	private static final String NODE_PATH_PROPERTY = "property";
 	private static final String NODE_PATH_TRANSIENT = "transient";
@@ -57,9 +51,8 @@ public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegist
 	private static final String NODE_TABLE_ID = "id";
 	private static final String NODE_COLUMN = "column";
 	private static final String NODE_NAME = "name";
-	Set<Class<?>> loadingClass = new HashSet<>();
-	private static Configuration configuration;
- 
+	private Configuration configuration;
+
 	@Override
 	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 		try {
@@ -69,55 +62,26 @@ public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegist
 			if (daoMapperScan != null) {
 				scanPackage = daoMapperScan.value();
 			}
-			BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
-			builder.addPropertyValue("processPropertyPlaceHolders", true);
-			builder.addPropertyValue("annotationClass", Mapper.class);
-			builder.addPropertyValue("basePackage", scanPackage);
-			builder.addPropertyValue("mapperFactoryBeanClass", MapperBeanProxy.class);
+			BeanDefinitionBuilder mapperScanner = BeanDefinitionBuilder.genericBeanDefinition(MapperScannerConfigurer.class);
+			mapperScanner.addPropertyValue("processPropertyPlaceHolders", true);
+			mapperScanner.addPropertyValue("annotationClass", Mapper.class);
+			mapperScanner.addPropertyValue("basePackage", scanPackage);
+			mapperScanner.addPropertyValue("mapperFactoryBeanClass", MapperBeanProxy.class);
 			// BeanWrapper beanWrapper = new BeanWrapperImpl(MapperScannerConfigurer.class);
-			registry.registerBeanDefinition(MapperScannerConfigurer.class.getName(), builder.getBeanDefinition());
+			registry.registerBeanDefinition(MapperScannerConfigurer.class.getName(), mapperScanner.getBeanDefinition());
+
+			// -
+			BeanDefinitionBuilder lastInitBean = BeanDefinitionBuilder.genericBeanDefinition(LastInitBean.class);
+			lastInitBean.addPropertyValue(AutoMapping.class.getSimpleName(), this);
+			registry.registerBeanDefinition(LastInitBean.class.getName(), lastInitBean.getBeanDefinition());
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 		// doMappingTable(new Resource[] {new ClassPathResource("/mapper/Table.xml")});
 	}
 
-	@Override
-	public void setBeanFactory(BeanFactory factory) throws BeansException {
-		new Thread(() -> {
-			while (!factory.containsBean("sqlSessionFactory")) {
-				sleep(3000);
-				LOGGER.info("Waiting SqlSessionFactory init....");
-			}
-			sleep(3000);
-			LOGGER.info("init auto mapping ....");
-			configuration = factory.getBean(SqlSessionFactory.class).getConfiguration();
-			TypeAliasRegistry registry = configuration.getTypeAliasRegistry();
-			Map<String, Class<?>> typeAliases = registry.getTypeAliases();
-			typeAliases.forEach((k, v) -> {
-				Package pkg = v.getPackage();
-				if (pkg == null) {
-					return;
-				}
-				String name = pkg.getName();
-				if (!(name.startsWith("org.apache") || name.startsWith("java."))) {
-					if (loadingClass.contains(v)) {
-						return;
-					}
-					doMappingTable(v);
-					loadingClass.add(v);
-				}
-			});
-			LOGGER.info("init auto mapping  end.");
-		}).start();
-	}
-
-	private void sleep(long time) {
-		try {
-			Thread.sleep(time);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+	public void setConfiguration(Configuration configuration) {
+		this.configuration = configuration;
 	}
 
 	/**
@@ -266,33 +230,45 @@ public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegist
 		SqlCommand[] values = SqlCommand.values();
 		for (SqlCommand command : values) {
 			if (SqlCommand.INSERT.equals(command)) {
-				configuration.addMappedStatement(buildInsert(command, tableMapping));
+				addMappedStatement(buildInsert(command, tableMapping));
 			}
 			// 根据ID查找
 			else if (SqlCommand.SQL_FIND_BY_ID.equals(command)) {
-				configuration.addMappedStatement(buildSelect(command, tableMapping));
+				addMappedStatement(buildSelect(command, tableMapping));
 			}
 			// 分根据对象查询
 			else if (SqlCommand.SQL_FIND_BY_ENTITY.equals(command)) {
-				configuration.addMappedStatement(buildSelect(command, tableMapping));
+				addMappedStatement(buildSelect(command, tableMapping));
 			}
 			// 根据ID删除
 			else if (SqlCommand.SQL_DELETE_BY_ID.equals(command)) {
-				configuration.addMappedStatement(buildDeleteById(command, tableMapping));
+				addMappedStatement(buildDeleteById(command, tableMapping));
 			}
 			// 根据ID更新
 			else if (SqlCommand.SQL_UPDATE_BY_ID.equals(command)) {
-				configuration.addMappedStatement(buildUpdateById(command, tableMapping));
+				addMappedStatement(buildUpdateById(command, tableMapping));
 			}
 			// 根据更新非空字段
 			else if (SqlCommand.SQL_UPDATE_NOT_NULL_BY_ID.equals(command)) {
-				configuration.addMappedStatement(buildUpdateById(command, tableMapping));
+				addMappedStatement(buildUpdateById(command, tableMapping));
 			}
 			// 分页查询
 			else if (SqlCommand.SQL_FIND_PAGE_BY_ENTITY.equals(command)) {
-				configuration.addMappedStatement(buildSelect(command, tableMapping));
+				addMappedStatement(buildSelect(command, tableMapping));
 			}
 		}
+	}
+
+	/**
+	 * 添加配置
+	 * 
+	 * @param MappedStatement - 对象信息
+	 */
+	private void addMappedStatement(MappedStatement ms) {
+		if (ms == null) {
+			return;
+		}
+		configuration.addMappedStatement(ms);
 	}
 
 	/**
@@ -321,12 +297,15 @@ public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegist
 	private MappedStatement buildInsert(SqlCommand command, TableMapping tableMapping) {
 		Class<?> classz = tableMapping.getClassz();
 		String statementId = ScriptSqlUtils.getStatementId(command, classz);
+		Field fieldId = tableMapping.getField(tableMapping.getKeyId());
+		if(fieldId == null){
+			return null;
+		}
 		SqlSource sqlSource = getSqlSource(command, tableMapping);
 		// 主键生成 - TODO 其他策略
 		KeyGenerator keyGenerator = new Jdbc3KeyGenerator();
 		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.INSERT)
-				.parameterMap(new ParameterMap.Builder(configuration, classz.getName(), tableMapping.getClassz(),
-						new ArrayList<>()).build())
+				.parameterMap(new ParameterMap.Builder(configuration, classz.getName(), tableMapping.getClassz(), new ArrayList<>()).build())
 				.keyGenerator(keyGenerator).keyProperty(tableMapping.getKeyId()).build();
 	}
 
@@ -340,8 +319,11 @@ public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegist
 	private MappedStatement buildSelect(SqlCommand command, TableMapping tableMapping) {
 		Class<?> classz = tableMapping.getClassz();
 		String statementId = ScriptSqlUtils.getStatementId(command, classz);
-		SqlSource sqlSource = getSqlSource(command, tableMapping);
 		Field fieldId = tableMapping.getField(tableMapping.getKeyId());
+		if(fieldId == null){
+			return null;
+		}
+		SqlSource sqlSource = getSqlSource(command, tableMapping);
 		List<ResultMap> resultMaps = new ArrayList<>(1);
 		// 全局resultMap
 		String resultMapEntityName = classz.getName();
@@ -358,21 +340,15 @@ public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegist
 			for (String column : columns.keySet()) {
 				String propertie = tableMapping.getPropertieByColumn(column);
 				Field field = tableMapping.getField(propertie);
-				resultMappings
-						.add(new ResultMapping.Builder(configuration, propertie, column, field.getType()).build());
+				resultMappings.add(new ResultMapping.Builder(configuration, propertie, column, field.getType()).build());
 			}
-			ResultMap resultMapEntity = new ResultMap.Builder(configuration, resultMapEntityName, classz,
-					resultMappings).build();
+			ResultMap resultMapEntity = new ResultMap.Builder(configuration, resultMapEntityName, classz, resultMappings).build();
 			resultMaps.add(resultMapEntity);
 			// 放入全局
 			configuration.addResultMap(resultMapEntity);
 		}
-		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.SELECT)
-				.resultMaps(resultMaps)
-				.parameterMap(
-						new ParameterMap.Builder(configuration, classz.getName(), fieldId.getType(), new ArrayList<>())
-								.build())
-				.build();
+		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.SELECT).resultMaps(resultMaps)
+				.parameterMap(new ParameterMap.Builder(configuration, classz.getName(), fieldId.getType(), new ArrayList<>()).build()).build();
 	}
 
 	/**
@@ -385,11 +361,13 @@ public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegist
 	private MappedStatement buildDeleteById(SqlCommand command, TableMapping tableMapping) {
 		Class<?> classz = tableMapping.getClassz();
 		Field fieldId = tableMapping.getField(tableMapping.getKeyId());
+		if(fieldId == null){
+			return null;
+		}
 		String statementId = ScriptSqlUtils.getStatementId(command, classz);
 		SqlSource sqlSource = getSqlSource(command, tableMapping);
-		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.DELETE).parameterMap(
-				new ParameterMap.Builder(configuration, classz.getName(), fieldId.getType(), new ArrayList<>()).build())
-				.build();
+		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.DELETE)
+				.parameterMap(new ParameterMap.Builder(configuration, classz.getName(), fieldId.getType(), new ArrayList<>()).build()).build();
 	}
 
 	/**
@@ -402,11 +380,13 @@ public class AutoMapping implements BeanFactoryAware, ImportBeanDefinitionRegist
 	private MappedStatement buildUpdateById(SqlCommand command, TableMapping tableMapping) {
 		Class<?> classz = tableMapping.getClassz();
 		String statementId = ScriptSqlUtils.getStatementId(command, classz);
+		Field fieldId = tableMapping.getField(tableMapping.getKeyId());
+		if(fieldId == null){
+			return null;
+		}
 		SqlSource sqlSource = getSqlSource(command, tableMapping);
-		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.UPDATE).parameterMap(
-				new ParameterMap.Builder(configuration, classz.getName(), tableMapping.getClassz(), new ArrayList<>())
-						.build())
-				.build();
+		return new MappedStatement.Builder(configuration, statementId, sqlSource, SqlCommandType.UPDATE)
+				.parameterMap(new ParameterMap.Builder(configuration, classz.getName(), tableMapping.getClassz(), new ArrayList<>()).build()).build();
 	}
 
 }

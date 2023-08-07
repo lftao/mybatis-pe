@@ -138,6 +138,9 @@ public class TableMapping implements Serializable {
      * @return 字段
      */
     public Field getField(String propertie) {
+    	if(propertie == null) {
+    		return null;
+    	}
         List<Field> list = getAllFields();
         return list.stream().filter(f -> f.getName().equals(propertie)).findFirst().get();
     }
