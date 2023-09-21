@@ -26,6 +26,13 @@ public class ScriptSqlUtils {
             if (column == null || transientProperties.contains(name)) {
                 return;
             }
+            // 更新跳过ID
+            if(command.name().startsWith("SQL_UPDATE")) {
+            	String keyId = mapping.getKeyId();
+            	if(column.equals(keyId)) {
+            		return;
+            	}
+            }
             // 插入语句
             if (SqlCommand.INSERT.equals(command)) {
                 // 所有column字段
